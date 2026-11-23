@@ -1,0 +1,1046 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An interactive playbook for building a high-throughput, verifiable AI-assisted development environment.">
+  <title>Agentic Development — Interactive Playbook</title>
+  <script>
+    try {
+      const savedTheme = localStorage.getItem('agentic-dev-theme');
+      if (savedTheme === 'light' || savedTheme === 'dark') document.documentElement.dataset.theme = savedTheme;
+    } catch (_) {}
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #f9f9f7;
+      --surface: #fcfcfb;
+      --surface-raised: #ffffff;
+      --surface-soft: #f0f3f7;
+      --ink: #0b0b0b;
+      --ink-secondary: #52514e;
+      --ink-muted: #676661;
+      --line: #e1e0d9;
+      --line-strong: #c3c2b7;
+      --accent: #2a78d6;
+      --accent-strong: #1c5cab;
+      --accent-action: #1c5cab;
+      --accent-action-hover: #184f95;
+      --on-accent: #ffffff;
+      --accent-soft: #e8f1fc;
+      --accent-faint: rgba(42, 120, 214, .09);
+      --good: #0ca30c;
+      --warning: #9a6700;
+      --critical: #d03b3b;
+      --shadow: 0 20px 60px rgba(22, 32, 44, .08);
+      --shadow-small: 0 8px 24px rgba(22, 32, 44, .06);
+      --radius: 22px;
+      --mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root:where(:not([data-theme="light"])) {
+        color-scheme: dark;
+        --page: #0d0d0d;
+        --surface: #1a1a19;
+        --surface-raised: #20201f;
+        --surface-soft: #242729;
+        --ink: #f0efec;
+        --ink-secondary: #c3c2b7;
+        --ink-muted: #989790;
+        --line: #2c2c2a;
+        --line-strong: #383835;
+        --accent: #3987e5;
+        --accent-strong: #6da7ec;
+        --accent-soft: #172a40;
+        --accent-faint: rgba(57, 135, 229, .12);
+        --warning: #fab219;
+        --shadow: 0 24px 70px rgba(0, 0, 0, .28);
+        --shadow-small: 0 8px 24px rgba(0, 0, 0, .2);
+      }
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --surface-raised: #20201f;
+      --surface-soft: #242729;
+      --ink: #f0efec;
+      --ink-secondary: #c3c2b7;
+      --ink-muted: #989790;
+      --line: #2c2c2a;
+      --line-strong: #383835;
+      --accent: #3987e5;
+      --accent-strong: #6da7ec;
+      --accent-action: #3987e5;
+      --accent-action-hover: #6da7ec;
+      --on-accent: #0b0b0b;
+      --accent-soft: #172a40;
+      --accent-faint: rgba(57, 135, 229, .12);
+      --warning: #fab219;
+      --shadow: 0 24px 70px rgba(0, 0, 0, .28);
+      --shadow-small: 0 8px 24px rgba(0, 0, 0, .2);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 96px; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 82% 0%, var(--accent-faint), transparent 28rem),
+        var(--page);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select, textarea { font: inherit; }
+    button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+    button { color: inherit; }
+    a { color: inherit; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1, h2, h3 { line-height: 1.1; letter-spacing: -.035em; }
+    h2 { margin-bottom: 16px; font-size: clamp(2rem, 4vw, 3.4rem); }
+    h3 { font-size: 1.15rem; }
+    ::selection { background: var(--accent-action); color: var(--on-accent); }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+
+    .skip-link {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 100;
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: var(--ink);
+      color: var(--surface);
+      transform: translateY(-150%);
+    }
+    .skip-link:focus { transform: translateY(0); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .shell { width: min(1180px, calc(100% - 48px)); margin-inline: auto; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid transparent;
+      background: color-mix(in srgb, var(--page) 88%, transparent);
+      backdrop-filter: blur(18px);
+    }
+    .topbar-inner { min-height: 76px; display: flex; align-items: center; gap: 28px; }
+    .brand { display: inline-flex; align-items: center; gap: 11px; text-decoration: none; font-weight: 750; letter-spacing: -.02em; white-space: nowrap; }
+    .brand-mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: 11px;
+      background: var(--ink);
+      color: var(--surface);
+      font-family: var(--mono);
+      font-size: 14px;
+    }
+    .nav { display: flex; gap: 4px; margin-left: auto; }
+    .nav a {
+      padding: 8px 12px;
+      border-radius: 9px;
+      color: var(--ink-muted);
+      font-size: .88rem;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .nav a:hover, .nav a[aria-current="location"] { background: var(--surface-soft); color: var(--ink); }
+    .icon-button {
+      display: inline-flex;
+      min-width: 44px;
+      min-height: 44px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+      cursor: pointer;
+    }
+    .icon-button:hover { border-color: var(--line-strong); background: var(--surface-soft); }
+
+    .hero { display: grid; grid-template-columns: 1.25fr .75fr; gap: 64px; align-items: center; padding-block: 96px 72px; }
+    .eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; color: var(--accent-strong); font-family: var(--mono); font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    .eyebrow::before { width: 22px; height: 2px; background: currentColor; content: ""; }
+    .hero h1 { max-width: 780px; margin-bottom: 26px; font-size: clamp(3.2rem, 6.4vw, 6.2rem); font-weight: 760; letter-spacing: -.065em; }
+    .hero h1 span { color: var(--ink-muted); }
+    .hero-copy { max-width: 660px; margin-bottom: 34px; color: var(--ink-secondary); font-size: 1.12rem; }
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+    .button {
+      display: inline-flex;
+      min-height: 48px;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 11px 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--ink);
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .button:hover { border-color: var(--line-strong); transform: translateY(-1px); }
+    .button-primary { border-color: var(--accent-action); background: var(--accent-action); color: var(--on-accent); }
+    .button-primary:hover { border-color: var(--accent-action-hover); background: var(--accent-action-hover); }
+    .button-small { min-height: 42px; padding: 8px 14px; font-size: .88rem; }
+    .button:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    .control-card {
+      position: relative;
+      overflow: hidden;
+      padding: 26px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    .control-card::before { position: absolute; inset: 0 0 auto; height: 3px; background: var(--accent); content: ""; }
+    .control-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .control-head span:first-child { font-family: var(--mono); font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .live-badge { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-muted); font-size: .74rem; }
+    .live-badge::before { width: 7px; height: 7px; border-radius: 50%; background: var(--good); content: ""; }
+    .control-row { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 15px 0; border-top: 1px solid var(--line); }
+    .control-icon { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 10px; background: var(--accent-soft); color: var(--accent-strong); font-family: var(--mono); font-size: .78rem; font-weight: 800; }
+    .control-row strong { display: block; font-size: .9rem; }
+    .control-row small { display: block; color: var(--ink-muted); font-size: .76rem; }
+    .control-value { color: var(--ink-secondary); font-family: var(--mono); font-size: .75rem; }
+    .control-caption { margin: 20px 0 0; color: var(--ink-muted); font-size: .8rem; }
+
+    .principles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; overflow: hidden; margin-bottom: 110px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--line); }
+    .principle { padding: 28px; background: var(--surface); }
+    .principle-value { display: block; margin-bottom: 10px; color: var(--accent-strong); font-size: 2.4rem; font-weight: 760; letter-spacing: -.05em; line-height: 1; }
+    .principle h3 { margin-bottom: 8px; }
+    .principle p { margin: 0; color: var(--ink-muted); font-size: .9rem; }
+
+    .section { padding-block: 10px 110px; }
+    .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 40px; margin-bottom: 38px; }
+    .section-heading > div { max-width: 720px; }
+    .section-heading p { max-width: 570px; margin: 0; color: var(--ink-secondary); }
+    .section-index { color: var(--ink-muted); font-family: var(--mono); font-size: .8rem; }
+
+    .architecture { display: grid; grid-template-columns: .9fr 1.1fr; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-small); }
+    .layer-list { padding: 14px; border-right: 1px solid var(--line); }
+    .layer-button {
+      display: grid;
+      width: 100%;
+      grid-template-columns: 34px 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 16px;
+      border: 0;
+      border-radius: 13px;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+    }
+    .layer-button:hover { background: var(--surface-soft); }
+    .layer-button[aria-pressed="true"] { background: var(--accent-soft); }
+    .layer-number { color: var(--ink-muted); font-family: var(--mono); font-size: .72rem; }
+    .layer-button[aria-pressed="true"] .layer-number { color: var(--accent-strong); }
+    .layer-button strong { display: block; font-size: .92rem; }
+    .layer-button small { display: block; color: var(--ink-muted); font-size: .76rem; }
+    .layer-arrow { color: var(--ink-muted); }
+    .layer-detail { display: flex; min-height: 450px; flex-direction: column; justify-content: center; padding: clamp(28px, 5vw, 60px); }
+    .detail-kicker { margin-bottom: 14px; color: var(--accent-strong); font-family: var(--mono); font-size: .74rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .layer-detail h3 { margin-bottom: 16px; font-size: clamp(1.7rem, 3vw, 2.5rem); }
+    .layer-detail > p { color: var(--ink-secondary); }
+    .detail-list { display: grid; gap: 10px; margin: 12px 0 26px; padding: 0; list-style: none; }
+    .detail-list li { position: relative; padding-left: 23px; color: var(--ink-secondary); font-size: .9rem; }
+    .detail-list li::before { position: absolute; left: 0; color: var(--accent); content: "✓"; font-weight: 800; }
+    .code-label { display: block; overflow: auto; padding: 14px 16px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); color: var(--accent-strong); font-family: var(--mono); font-size: .78rem; white-space: nowrap; }
+
+    .builder { display: grid; grid-template-columns: .8fr 1.2fr; gap: 24px; align-items: start; }
+    .builder-form, .builder-result { padding: clamp(24px, 4vw, 36px); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+    .builder-form { display: grid; gap: 24px; }
+    .field { display: grid; gap: 8px; }
+    .field label, .field-label, .field legend { color: var(--ink-secondary); font-size: .8rem; font-weight: 750; }
+    .field input[type="text"], .field select {
+      width: 100%;
+      min-height: 48px;
+      padding: 11px 13px;
+      border: 1px solid var(--line-strong);
+      border-radius: 11px;
+      background: var(--surface-raised);
+      color: var(--ink);
+    }
+    .field input::placeholder { color: var(--ink-muted); }
+    fieldset.field { min-width: 0; margin: 0; padding: 0; border: 0; }
+    .segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    .segmented label { position: relative; cursor: pointer; }
+    .segmented input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .segment { display: flex; min-height: 44px; align-items: center; justify-content: center; gap: 6px; padding: 9px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink-muted); font-size: .78rem; }
+    .segmented input:checked + .segment { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
+    .segmented input:focus-visible + .segment { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+    .status-dot.medium { background: var(--warning); }
+    .status-dot.high { background: var(--critical); }
+    .switch-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; cursor: pointer; }
+    .switch-copy strong { display: block; font-size: .88rem; }
+    .switch-copy small { display: block; margin-top: 4px; color: var(--ink-muted); font-size: .76rem; line-height: 1.45; }
+    .switch { position: relative; flex: 0 0 auto; width: 46px; height: 28px; }
+    .switch input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .switch-track { position: absolute; inset: 0; border: 1px solid var(--line-strong); border-radius: 20px; background: var(--surface-soft); transition: background .18s ease; }
+    .switch-track::after { position: absolute; top: 4px; left: 4px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink-muted); content: ""; transition: transform .18s ease; }
+    .switch input:checked + .switch-track { border-color: var(--accent); background: var(--accent); }
+    .switch input:checked + .switch-track::after { background: white; transform: translateX(18px); }
+    .switch input:focus-visible + .switch-track { outline: 3px solid var(--accent); outline-offset: 4px; }
+
+    .result-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 26px; }
+    .result-top h3 { margin: 5px 0 0; font-size: 1.55rem; }
+    .badges { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 24px; }
+    .badge { padding: 5px 9px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink-secondary); font-family: var(--mono); font-size: .7rem; }
+    .badge-accent { border-color: transparent; background: var(--accent-soft); color: var(--accent-strong); }
+    .workflow-steps { display: grid; gap: 0; margin: 0 0 24px; padding: 0; list-style: none; counter-reset: workflow; }
+    .workflow-steps li { position: relative; min-height: 45px; padding: 0 0 18px 42px; color: var(--ink-secondary); font-size: .88rem; counter-increment: workflow; }
+    .workflow-steps li::before { position: absolute; left: 0; display: grid; width: 27px; height: 27px; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: var(--surface-raised); color: var(--accent-strong); content: counter(workflow); font-family: var(--mono); font-size: .68rem; font-weight: 800; }
+    .workflow-steps li:not(:last-child)::after { position: absolute; top: 28px; bottom: 0; left: 13px; width: 1px; background: var(--line); content: ""; }
+    .checkpoint { margin-bottom: 22px; padding: 14px 16px; border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; background: var(--accent-faint); }
+    .checkpoint strong { display: block; margin-bottom: 3px; font-size: .78rem; }
+    .checkpoint span { color: var(--ink-secondary); font-size: .8rem; }
+    details.prompt-details { border-top: 1px solid var(--line); padding-top: 18px; }
+    details.prompt-details summary { min-height: 40px; font-size: .82rem; font-weight: 750; cursor: pointer; }
+    .prompt-output { max-height: 290px; overflow: auto; margin: 12px 0 16px; padding: 16px; border-radius: 11px; background: var(--surface-soft); color: var(--ink-secondary); font-family: var(--mono); font-size: .73rem; line-height: 1.65; white-space: pre-wrap; }
+
+    .model-switcher { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+    .model-button { min-height: 90px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); text-align: left; cursor: pointer; }
+    .model-button:hover { background: var(--surface-soft); }
+    .model-button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+    .model-button strong { display: block; margin-bottom: 3px; }
+    .model-button small { color: var(--ink-muted); font-size: .72rem; }
+    .model-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; padding: clamp(26px, 4vw, 42px); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+    .model-id { display: inline-block; margin-bottom: 18px; color: var(--accent-strong); font-family: var(--mono); font-size: .75rem; }
+    .model-panel h3 { margin-bottom: 12px; font-size: 2rem; }
+    .model-panel p { color: var(--ink-secondary); }
+    #model-caveat { font-size: .78rem; }
+    .model-use { margin: 0; padding: 0; list-style: none; }
+    .model-use li { padding: 11px 0; border-bottom: 1px solid var(--line); color: var(--ink-secondary); font-size: .88rem; }
+    .model-use li::before { margin-right: 9px; color: var(--accent); content: "↗"; }
+    .effort-box { margin-top: 24px; }
+    .effort-box > span { display: block; margin-bottom: 10px; color: var(--ink-muted); font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; }
+    .effort-options { display: flex; flex-wrap: wrap; gap: 7px; }
+    .effort-button { min-width: 52px; min-height: 40px; padding: 7px 11px; border: 1px solid var(--line); border-radius: 9px; background: transparent; color: var(--ink-muted); font-family: var(--mono); font-size: .72rem; cursor: pointer; }
+    .effort-button[aria-pressed="true"] { border-color: var(--accent-action); background: var(--accent-action); color: var(--on-accent); }
+    .effort-note { min-height: 48px; margin: 14px 0 0; font-size: .8rem; }
+
+    .guardrails { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .guardrail { padding: 24px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+    .guardrail-number { display: block; margin-bottom: 24px; color: var(--accent-strong); font-family: var(--mono); font-size: .75rem; }
+    .guardrail h3 { margin-bottom: 10px; }
+    .guardrail p { margin: 0; color: var(--ink-muted); font-size: .85rem; }
+
+    .rollout { display: grid; grid-template-columns: .65fr 1.35fr; gap: 56px; padding: clamp(28px, 5vw, 52px); border: 1px solid var(--line); border-radius: 28px; background: var(--surface); box-shadow: var(--shadow-small); }
+    .rollout-intro { display: flex; flex-direction: column; align-items: flex-start; }
+    .rollout-intro h2 { font-size: clamp(2rem, 4vw, 3rem); }
+    .rollout-intro p { color: var(--ink-secondary); }
+    .progress-wrap { margin: auto 0 22px; width: 100%; padding-top: 30px; }
+    .progress-label { display: flex; justify-content: space-between; margin-bottom: 10px; color: var(--ink-muted); font-family: var(--mono); font-size: .75rem; }
+    progress { display: block; width: 100%; height: 9px; overflow: hidden; border: 0; border-radius: 8px; background: var(--surface-soft); accent-color: var(--accent); }
+    progress::-webkit-progress-bar { background: var(--surface-soft); }
+    progress::-webkit-progress-value { border-radius: 8px; background: var(--accent); }
+    progress::-moz-progress-bar { border-radius: 8px; background: var(--accent); }
+    .checklist { display: grid; gap: 10px; }
+    .check-item { display: grid; grid-template-columns: 28px 1fr; gap: 13px; align-items: start; padding: 17px; border: 1px solid var(--line); border-radius: 13px; cursor: pointer; }
+    .check-item:hover { background: var(--surface-soft); }
+    .check-item:has(input:checked) { border-color: var(--accent); background: var(--accent-faint); }
+    .check-item input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); cursor: pointer; }
+    .check-item strong { display: block; font-size: .9rem; }
+    .check-item small { display: block; margin-top: 4px; color: var(--ink-muted); font-size: .78rem; line-height: 1.5; }
+    .check-item:has(input:checked) strong { text-decoration: line-through; text-decoration-color: var(--ink-muted); }
+
+    .closing { padding: 30px 0 100px; text-align: center; }
+    .closing p { margin-bottom: 12px; color: var(--ink-muted); font-family: var(--mono); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
+    .closing h2 { max-width: 800px; margin-inline: auto; }
+    .closing h2 span { color: var(--accent-strong); }
+    footer { padding: 28px 0 40px; border-top: 1px solid var(--line); color: var(--ink-muted); font-size: .78rem; }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 18px; }
+    .footer-links a { text-underline-offset: 3px; }
+    .footer-links a:hover { color: var(--ink); }
+    .toast { position: fixed; right: 24px; bottom: 24px; z-index: 50; max-width: min(360px, calc(100% - 48px)); padding: 13px 18px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--ink); color: var(--surface); box-shadow: var(--shadow); font-size: .85rem; opacity: 0; pointer-events: none; transform: translateY(12px); transition: opacity .2s, transform .2s; }
+    .toast.visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 960px) {
+      html { scroll-padding-top: 142px; }
+      .topbar-inner { flex-wrap: wrap; gap: 6px 16px; padding-block: 10px; }
+      .nav { display: flex; order: 3; width: 100%; margin: 0; overflow-x: auto; padding-bottom: 3px; scrollbar-width: thin; }
+      .nav a { flex: 0 0 auto; }
+      .theme-toggle { margin-left: auto; }
+      .hero { grid-template-columns: 1fr; gap: 42px; padding-top: 70px; }
+      .control-card { max-width: 580px; }
+      .architecture, .builder { grid-template-columns: 1fr; }
+      .layer-list { display: grid; grid-template-columns: 1fr 1fr; border-right: 0; border-bottom: 1px solid var(--line); }
+      .layer-detail { min-height: 380px; }
+      .guardrails { grid-template-columns: 1fr 1fr; }
+      .rollout { grid-template-columns: 1fr; gap: 20px; }
+      .progress-wrap { margin-top: 10px; }
+    }
+    @media (max-width: 640px) {
+      .shell { width: min(100% - 28px, 1180px); }
+      .topbar-inner { min-height: 66px; }
+      .brand-text { font-size: .88rem; }
+      .hero { padding-block: 52px 48px; }
+      .hero h1 { font-size: clamp(2.8rem, 14vw, 4.4rem); }
+      .hero-copy { font-size: 1rem; }
+      .principles { grid-template-columns: 1fr; margin-bottom: 80px; }
+      .section { padding-bottom: 80px; }
+      .section-heading { display: block; }
+      .section-index { display: block; margin-top: 14px; }
+      .layer-list { grid-template-columns: 1fr; }
+      .layer-button { padding: 12px; }
+      .layer-detail { min-height: 0; padding: 28px 22px; }
+      .model-switcher { grid-template-columns: 1fr 1fr; }
+      .model-panel { grid-template-columns: 1fr; gap: 16px; }
+      .guardrails { grid-template-columns: 1fr; }
+      .result-top { display: block; }
+      .result-top .button { margin-top: 12px; }
+      .footer-inner { align-items: flex-start; flex-direction: column; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; }
+    }
+    @media print {
+      :root, :root[data-theme="light"], :root[data-theme="dark"] {
+        color-scheme: light;
+        --page: #ffffff;
+        --surface: #ffffff;
+        --surface-raised: #ffffff;
+        --surface-soft: #f0f3f7;
+        --ink: #0b0b0b;
+        --ink-secondary: #52514e;
+        --ink-muted: #52514e;
+        --line: #c3c2b7;
+        --line-strong: #898781;
+        --accent: #1c5cab;
+        --accent-strong: #1c5cab;
+        --accent-action: #1c5cab;
+        --accent-action-hover: #184f95;
+        --on-accent: #ffffff;
+        --accent-soft: #e8f1fc;
+        --accent-faint: rgba(42, 120, 214, .09);
+      }
+      .topbar, .actions, .button, .toast { display: none; }
+      body { background: white; color: black; }
+      .shell { width: 100%; }
+      .hero, .section { padding-block: 30px; }
+      .builder, .architecture, .model-panel, .rollout { box-shadow: none; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <a class="brand" href="#overview" aria-label="Agentic Development home">
+        <span class="brand-mark" aria-hidden="true">A/</span>
+        <span class="brand-text">Agentic Development</span>
+      </a>
+      <nav class="nav" aria-label="Page navigation">
+        <a href="#architecture">Architecture</a>
+        <a href="#builder">Workflow builder</a>
+        <a href="#models">Models</a>
+        <a href="#guardrails">Guardrails</a>
+        <a href="#rollout">Rollout</a>
+      </nav>
+      <button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Switch to dark theme" title="Change color theme">
+        <span id="theme-icon" aria-hidden="true">◐</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="shell hero" id="overview">
+      <div>
+        <div class="eyebrow">Interactive engineering playbook</div>
+        <h1>Delegate the work.<span> Keep the judgment.</span></h1>
+        <p class="hero-copy">Design an AI-assisted development environment that multiplies verified output—not your supervision load. Start with one agent, add evidence, then scale what works.</p>
+        <div class="actions">
+          <a class="button button-primary" href="#builder">Build your workflow <span aria-hidden="true">→</span></a>
+          <a class="button" href="#architecture">Explore the stack</a>
+        </div>
+      </div>
+      <aside class="control-card" aria-label="Recommended starting configuration">
+        <div class="control-head">
+          <span>Default control plane</span>
+          <span class="live-badge">Ready</span>
+        </div>
+        <div class="control-row">
+          <span class="control-icon" aria-hidden="true">01</span>
+          <div><strong>Main agent</strong><small>Complex reasoning & implementation</small></div>
+          <span class="control-value">Opus 5.5</span>
+        </div>
+        <div class="control-row">
+          <span class="control-icon" aria-hidden="true">02</span>
+          <div><strong>Execution</strong><small>One task, isolated context</small></div>
+          <span class="control-value">1 session</span>
+        </div>
+        <div class="control-row">
+          <span class="control-icon" aria-hidden="true">03</span>
+          <div><strong>Verification</strong><small>Local checks + full CI gate</small></div>
+          <span class="control-value">Evidence</span>
+        </div>
+        <div class="control-row">
+          <span class="control-icon" aria-hidden="true">04</span>
+          <div><strong>Your attention</strong><small>Decisions, risk & final acceptance</small></div>
+          <span class="control-value">Focused</span>
+        </div>
+        <p class="control-caption">Optimize verified changes per hour of human attention—not tokens or agent count.</p>
+      </aside>
+    </section>
+
+    <section class="shell principles" aria-label="Core principles">
+      <article class="principle">
+        <span class="principle-value">01</span>
+        <h3>One agent by default</h3>
+        <p>Extra roles activate for risk, uncertainty, or measured scale—not as ceremony.</p>
+      </article>
+      <article class="principle">
+        <span class="principle-value">02</span>
+        <h3>Checks before confidence</h3>
+        <p>Tests, compilers, linters, and CI outrank an agent’s claim that work is complete.</p>
+      </article>
+      <article class="principle">
+        <span class="principle-value">≤02</span>
+        <h3>Limit work in progress</h3>
+        <p>Start with one main task and one background task. Scale only if review keeps up.</p>
+      </article>
+    </section>
+
+    <section class="shell section" id="architecture">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">The portable stack</div>
+          <h2>A small harness with clear jobs.</h2>
+          <p>Select a layer to see what belongs there—and what should be moved elsewhere.</p>
+        </div>
+        <span class="section-index">01 / 05</span>
+      </div>
+      <div class="architecture">
+        <div class="layer-list" role="group" aria-label="Architecture layers">
+          <button class="layer-button" type="button" data-layer="context" aria-pressed="true"><span class="layer-number">01</span><span><strong>Project context</strong><small>Stable facts, loaded deliberately</small></span><span class="layer-arrow" aria-hidden="true">→</span></button>
+          <button class="layer-button" type="button" data-layer="verification" aria-pressed="false"><span class="layer-number">02</span><span><strong>Verification</strong><small>Objective, executable evidence</small></span><span class="layer-arrow" aria-hidden="true">→</span></button>
+          <button class="layer-button" type="button" data-layer="skills" aria-pressed="false"><span class="layer-number">03</span><span><strong>Skills & hooks</strong><small>Procedures and enforcement</small></span><span class="layer-arrow" aria-hidden="true">→</span></button>
+          <button class="layer-button" type="button" data-layer="agents" aria-pressed="false"><span class="layer-number">04</span><span><strong>Agents & sessions</strong><small>Isolation where it adds value</small></span><span class="layer-arrow" aria-hidden="true">→</span></button>
+          <button class="layer-button" type="button" data-layer="integrations" aria-pressed="false"><span class="layer-number">05</span><span><strong>Tools & MCP</strong><small>Minimal external connections</small></span><span class="layer-arrow" aria-hidden="true">→</span></button>
+          <button class="layer-button" type="button" data-layer="automation" aria-pressed="false"><span class="layer-number">06</span><span><strong>Automation</strong><small>Only after the workflow is proven</small></span><span class="layer-arrow" aria-hidden="true">→</span></button>
+        </div>
+        <article class="layer-detail" aria-live="polite">
+          <span class="detail-kicker" id="layer-kicker">Layer 01 · Context</span>
+          <h3 id="layer-title">Keep project knowledge lean.</h3>
+          <p id="layer-description">Put stable, non-obvious project knowledge in version control. Keep personal preferences global and deeper documentation on demand.</p>
+          <ul class="detail-list" id="layer-list"></ul>
+          <code class="code-label" id="layer-code">CLAUDE.md · .claude/rules/ · docs/adr/</code>
+        </article>
+      </div>
+    </section>
+
+    <section class="shell section" id="builder">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">Workflow builder</div>
+          <h2>Right-size the process.</h2>
+          <p>Describe the shape of a task. Get a bounded workflow and a copyable brief for your coding agent.</p>
+        </div>
+        <span class="section-index">02 / 05</span>
+      </div>
+      <div class="builder">
+        <form class="builder-form" id="workflow-form">
+          <div class="field">
+            <label for="task-goal">Desired outcome <span aria-hidden="true">·</span> optional</label>
+            <input id="task-goal" type="text" maxlength="180" placeholder="e.g. Add CSV export to the reports page">
+          </div>
+          <div class="field">
+            <label for="task-type">Task type</label>
+            <select id="task-type">
+              <option value="small">Small, clear change</option>
+              <option value="bug" selected>Bug fix</option>
+              <option value="feature">Feature</option>
+              <option value="refactor">Refactor</option>
+              <option value="migration">Cross-system migration</option>
+            </select>
+          </div>
+          <fieldset class="field">
+            <legend>Risk / blast radius</legend>
+            <div class="segmented">
+              <label><input type="radio" name="risk" value="low"><span class="segment"><span class="status-dot" aria-hidden="true"></span>Low</span></label>
+              <label><input type="radio" name="risk" value="medium" checked><span class="segment"><span class="status-dot medium" aria-hidden="true"></span>Medium</span></label>
+              <label><input type="radio" name="risk" value="high"><span class="segment"><span class="status-dot high" aria-hidden="true"></span>High</span></label>
+            </div>
+          </fieldset>
+          <div class="field">
+            <label for="check-command">Fast verification command</label>
+            <input id="check-command" type="text" maxlength="100" value="./scripts/check-fast" spellcheck="false">
+          </div>
+          <label class="switch-row" for="parallelizable">
+            <span class="switch-copy"><strong>Independently separable units</strong><small>Enable only with separate acceptance criteria and no unintended shared state.</small></span>
+            <span class="switch"><input id="parallelizable" type="checkbox"><span class="switch-track" aria-hidden="true"></span></span>
+          </label>
+        </form>
+
+        <article class="builder-result">
+          <span class="sr-only" id="workflow-announcement" role="status" aria-live="polite"></span>
+          <div class="result-top">
+            <div><span class="detail-kicker">Recommended workflow</span><h3 id="workflow-title">Reproduce, then repair.</h3></div>
+            <button class="button button-small" id="copy-brief" type="button">Copy task brief <span aria-hidden="true">↗</span></button>
+          </div>
+          <div class="badges">
+            <span class="badge badge-accent" id="workflow-model">Opus 5.5</span>
+            <span class="badge" id="workflow-effort">medium effort</span>
+            <span class="badge" id="workflow-agents">1 session</span>
+          </div>
+          <ol class="workflow-steps" id="workflow-steps"></ol>
+          <div class="checkpoint"><strong>Your checkpoint</strong><span id="workflow-checkpoint">Review the behavior and verification evidence; keep final merge approval.</span></div>
+          <details class="prompt-details">
+            <summary>View generated task brief</summary>
+            <pre class="prompt-output" id="prompt-output"></pre>
+            <button class="button button-small" id="copy-brief-secondary" type="button">Copy brief</button>
+          </details>
+        </article>
+      </div>
+    </section>
+
+    <section class="shell section" id="models">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">Model & effort explorer</div>
+          <h2>Match intelligence to the task.</h2>
+          <p>Compare assignment guidance and effort levels. This explorer is informational and does not change the workflow builder or copied brief.</p>
+        </div>
+        <span class="section-index">03 / 05</span>
+      </div>
+      <div class="model-switcher" role="group" aria-label="Explore a model">
+        <button class="model-button" type="button" data-model="opus" aria-pressed="true"><strong>Opus 5.5</strong><small>Main development</small></button>
+        <button class="model-button" type="button" data-model="sonnet" aria-pressed="false"><strong>Sonnet 5.5</strong><small>Routine implementation</small></button>
+        <button class="model-button" type="button" data-model="haiku" aria-pressed="false"><strong>Haiku 5.5</strong><small>Simple workers</small></button>
+        <button class="model-button" type="button" data-model="fable" aria-pressed="false"><strong>Fable 5.1</strong><small>Exceptional difficulty</small></button>
+      </div>
+      <article class="model-panel" aria-live="polite">
+        <div>
+          <code class="model-id" id="model-id">claude-opus-5-5</code>
+          <h3 id="model-title">Your default engineering partner.</h3>
+          <p id="model-description">Use for complex reasoning, implementation, subtle debugging, and verification-heavy work. Benchmark before routing work elsewhere.</p>
+          <div class="effort-box">
+            <span>Explore effort</span>
+            <div class="effort-options" role="group" aria-label="Effort level">
+              <button class="effort-button" type="button" data-effort="low" aria-pressed="false">low</button>
+              <button class="effort-button" type="button" data-effort="medium" aria-pressed="true">medium</button>
+              <button class="effort-button" type="button" data-effort="high" aria-pressed="false">high</button>
+              <button class="effort-button" type="button" data-effort="xhigh" aria-pressed="false">xhigh</button>
+              <button class="effort-button" type="button" data-effort="max" aria-pressed="false">max</button>
+            </div>
+            <p class="effort-note" id="effort-note">Clearly scoped everyday work. A strong default before adding cheaper models.</p>
+          </div>
+        </div>
+        <div>
+          <span class="detail-kicker">Good assignments</span>
+          <ul class="model-use" id="model-uses"></ul>
+          <p id="model-caveat">Availability varies by provider, plan, gateway, and organization policy.</p>
+        </div>
+      </article>
+    </section>
+
+    <section class="shell section" id="guardrails">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">Safe autonomy</div>
+          <h2>Fewer prompts. Hard boundaries.</h2>
+          <p>Approval fatigue is a bottleneck. Unbounded authority is a risk. Use both structural controls and selective human gates.</p>
+        </div>
+        <span class="section-index">04 / 05</span>
+      </div>
+      <div class="guardrails">
+        <article class="guardrail"><span class="guardrail-number">01 / POLICY</span><h3>Approve the data path</h3><p>Confirm your employer permits code, logs, issues, and documents to reach the selected provider.</p></article>
+        <article class="guardrail"><span class="guardrail-number">02 / ACCESS</span><h3>Minimize privilege</h3><p>No production credentials by default. Prefer short-lived, task-scoped access and sandboxed execution.</p></article>
+        <article class="guardrail"><span class="guardrail-number">03 / INPUT</span><h3>Distrust instructions in data</h3><p>Repository text, web pages, downloaded code, and tool output are data—not authority.</p></article>
+        <article class="guardrail"><span class="guardrail-number">04 / ACTIONS</span><h3>Gate external effects</h3><p>Ask before deployment, publication, destructive commands, new dependencies, or privilege changes.</p></article>
+      </div>
+    </section>
+
+    <section class="shell section" id="rollout">
+      <div class="rollout">
+        <div class="rollout-intro">
+          <div class="eyebrow">Implementation sequence</div>
+          <h2>Start boring.<br>Scale on evidence.</h2>
+          <p id="storage-description">Six steps toward a portable setup. Your progress is stored only in this browser.</p>
+          <div class="progress-wrap">
+            <div class="progress-label"><span id="progress-text">0 of 6 complete</span><span id="progress-percent">0%</span></div>
+            <progress id="rollout-progress" max="6" value="0" aria-label="Rollout completion">0%</progress>
+          </div>
+          <button class="button button-small" id="reset-progress" type="button">Reset progress</button>
+        </div>
+        <div class="checklist" id="checklist">
+          <label class="check-item"><input type="checkbox" data-step="provider"><span><strong>Confirm provider and data-policy approval</strong><small>Choose an approved authentication path before connecting private repositories.</small></span></label>
+          <label class="check-item"><input type="checkbox" data-step="bootstrap"><span><strong>Make a clean checkout reproducible</strong><small>Pin toolchains and dependencies; document one bootstrap path.</small></span></label>
+          <label class="check-item"><input type="checkbox" data-step="checks"><span><strong>Create one canonical verification entry point</strong><small>Align local checks with CI and map acceptance criteria to executed checks.</small></span></label>
+          <label class="check-item"><input type="checkbox" data-step="context"><span><strong>Write lean project context</strong><small>Record exact commands, non-obvious constraints, and stable architectural rules.</small></span></label>
+          <label class="check-item"><input type="checkbox" data-step="permissions"><span><strong>Configure sandboxing and permissions</strong><small>Allow routine local work; gate secrets, dependencies, destructive actions, and external writes.</small></span></label>
+          <label class="check-item"><input type="checkbox" data-step="baseline"><span><strong>Pilot and measure representative tasks</strong><small>Track active human time, interruptions, accepted lead time, rework, CI results, and spend.</small></span></label>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell closing">
+      <p>The operating principle</p>
+      <h2>Automate correction loops.<br><span>Keep ownership of decisions.</span></h2>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell footer-inner">
+      <span>Self-contained · No tracking · No external dependencies</span>
+      <div class="footer-links">
+        <a href="https://code.claude.com/docs/en/best-practices" target="_blank" rel="noopener noreferrer">Claude Code practices ↗</a>
+        <a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents" target="_blank" rel="noopener noreferrer">Harness engineering ↗</a>
+        <a href="https://dora.dev/research/2025/dora-report/" target="_blank" rel="noopener noreferrer">DORA research ↗</a>
+      </div>
+    </div>
+  </footer>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const $ = (selector, root = document) => root.querySelector(selector);
+    const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+
+    const layers = {
+      context: {
+        kicker: 'Layer 01 · Context',
+        title: 'Keep project knowledge lean.',
+        description: 'Put stable, non-obvious project knowledge in version control. Keep personal preferences global and deeper documentation on demand.',
+        items: ['Exact build, test, lint, and bootstrap commands', 'Non-obvious constraints and architectural decisions', 'Path-specific rules instead of a monolithic instruction file'],
+        code: 'CLAUDE.md · .claude/rules/ · docs/adr/'
+      },
+      verification: {
+        kicker: 'Layer 02 · Verification',
+        title: 'Give completion an objective referee.',
+        description: 'A green agent response is not evidence. Run deterministic checks and map each acceptance criterion to an observed result.',
+        items: ['One fast local entry point with concise diagnostics', 'The same underlying checks locally and in CI', 'Real application exercise when tests miss the workflow'],
+        code: 'scripts/check-fast · scripts/check-all · CI'
+      },
+      skills: {
+        kicker: 'Layer 03 · Procedures',
+        title: 'Turn repetition into a reliable procedure.',
+        description: 'Skills hold repeatable judgment. Hooks and scripts handle actions that must happen deterministically.',
+        items: ['One narrow responsibility and explicit trigger per skill', 'Deterministic mechanics in scripts, not prose', 'Fast hooks for formatting, validation, and hard boundaries'],
+        code: '.claude/skills/<name>/SKILL.md · settings.json'
+      },
+      agents: {
+        kicker: 'Layer 04 · Execution',
+        title: 'Isolate context before multiplying agents.',
+        description: 'Use subagents for independent investigation. Use separate sessions and worktrees for independent deliverables—not tightly coupled edits.',
+        items: ['One main agent for ordinary low-risk work', 'Fresh review for consequential or uncertain changes', 'One integration owner and serialized final verification'],
+        code: 'claude --worktree feature-auth · /code-review'
+      },
+      integrations: {
+        kicker: 'Layer 05 · Tools',
+        title: 'Prefer the simplest integration.',
+        description: 'Use an existing authenticated CLI when possible. Add MCP only when repeated copying from an external system is the measured bottleneck.',
+        items: ['Minimal tool surface with bounded output', 'Trusted servers and read-only scopes where possible', 'Secrets outside committed files and prompts'],
+        code: 'gh · project-scoped .mcp.json · /context'
+      },
+      automation: {
+        kicker: 'Layer 06 · Automation',
+        title: 'Automate only what already works.',
+        description: 'Pilot bounded headless jobs after the workflow is stable. Add an SDK or managed platform when you actually need embedding, hosted state, or scheduling.',
+        items: ['Explicit tool allowlists and permission mode', 'Turn, budget, and wall-clock limits', 'Structured output plus independent verification'],
+        code: 'Headless CLI → Agent SDK → Managed Agents'
+      }
+    };
+
+    const taskTypes = {
+      small: {
+        title: 'Keep the path short.',
+        steps: ['Confirm the expected behavior and allowed scope.', 'Implement the smallest coherent change.', 'Run the fast verification command and inspect the diff.'],
+        checkpoint: 'Inspect the diff and accept the change. Add review only if uncertainty emerges.'
+      },
+      bug: {
+        title: 'Reproduce, then repair.',
+        steps: ['Reproduce the symptom and isolate the relevant path.', 'Add the smallest regression test that fails for the reported reason.', 'Apply the minimal fix without weakening the test.', 'Run focused checks, then the broader applicable suite.'],
+        checkpoint: 'Confirm the regression test demonstrates the original failure and the final behavior is correct.'
+      },
+      feature: {
+        title: 'Explore, implement, prove.',
+        steps: ['Inspect relevant code and record constraints and non-goals.', 'Map acceptance criteria to concrete checks.', 'Implement the smallest complete vertical slice.', 'Exercise the real behavior and run applicable checks.'],
+        checkpoint: 'Resolve product trade-offs, inspect the acceptance mapping, and keep final merge approval.'
+      },
+      refactor: {
+        title: 'Preserve behavior by construction.',
+        steps: ['Add or identify characterization tests for current behavior.', 'Define the allowed structural change and behavior that must remain stable.', 'Refactor in small, independently verifiable steps.', 'Compare behavior and run the full applicable suite.'],
+        checkpoint: 'Review structural intent and confirm the change did not silently alter behavior.'
+      },
+      migration: {
+        title: 'Design the contract before edits.',
+        steps: ['Map producers, consumers, dependencies, and rollout constraints.', 'Approve the contract, compatibility strategy, and rollback path.', 'Implement one independently verifiable stage.', 'Run cross-system verification before starting the next stage.'],
+        checkpoint: 'Approve the contract and rollout before implementation; review integration evidence before merge.'
+      }
+    };
+
+    const models = {
+      opus: {
+        id: 'claude-opus-5-5',
+        title: 'Your default engineering partner.',
+        description: 'Use for complex reasoning, implementation, subtle debugging, and verification-heavy work. Benchmark before routing work elsewhere.',
+        uses: ['Ambiguous or cross-module implementation', 'Subtle bugs and production-facing changes', 'Architecture, migrations, and independent review'],
+        caveat: 'Availability varies by provider, plan, gateway, and organization policy.'
+      },
+      sonnet: {
+        id: 'claude-sonnet-5-5',
+        title: 'Routine work, measured first.',
+        description: 'A candidate for clearly scoped implementation when representative tasks show equal acceptance quality and lower total cost per accepted task.',
+        uses: ['Well-specified feature slices', 'Mechanical changes with strong verification', 'Focused implementation inside clear boundaries'],
+        caveat: 'Compare human rework and retries—not just token price—with Opus at lower effort.'
+      },
+      haiku: {
+        id: 'claude-haiku-5-5',
+        title: 'Small jobs with narrow contracts.',
+        description: 'Use for simple, high-volume tasks where an objective check or a stronger main agent catches mistakes.',
+        uses: ['Repository search and information collection', 'Simple extraction and classification', 'Narrow read-only subagent assignments'],
+        caveat: 'Do not make it the default owner of ambiguous implementation or high-risk decisions.'
+      },
+      fable: {
+        id: 'claude-fable-5-1',
+        title: 'Exceptional difficulty, exceptional scrutiny.',
+        description: 'Evaluate for the most demanding long-horizon reasoning when a measured advantage justifies its operational and cost trade-offs.',
+        uses: ['Hard investigations after simpler setups plateau', 'Demanding architecture and long-horizon reasoning', 'Benchmarked tasks with a measurable quality gap'],
+        caveat: 'Confirm provider support, retention requirements, and total accepted-task cost before adoption.'
+      }
+    };
+
+    const effortNotes = {
+      low: 'Simple collection and narrowly constrained tasks. Keep objective checks close.',
+      medium: 'Clearly scoped everyday work. A strong default before adding cheaper models.',
+      high: 'Subtle bugs, migrations, edge cases, and verification-heavy work.',
+      xhigh: 'Difficult agentic work where deeper reasoning shows a measured benefit.',
+      max: 'Rare, hard investigations. Use only when the level below leaves proven headroom.'
+    };
+
+    let toastTimer;
+    function showToast(message) {
+      const toast = $('#toast');
+      toast.textContent = message;
+      toast.classList.add('visible');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('visible'), 2400);
+    }
+
+    function selectLayer(key) {
+      const layer = layers[key];
+      if (!layer) return;
+      $$('.layer-button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.layer === key)));
+      $('#layer-kicker').textContent = layer.kicker;
+      $('#layer-title').textContent = layer.title;
+      $('#layer-description').textContent = layer.description;
+      $('#layer-code').textContent = layer.code;
+      $('#layer-list').replaceChildren(...layer.items.map(item => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        return li;
+      }));
+    }
+
+    $$('.layer-button').forEach(button => button.addEventListener('click', () => selectLayer(button.dataset.layer)));
+    selectLayer('context');
+
+    function selectModel(key) {
+      const model = models[key];
+      if (!model) return;
+      $$('.model-button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.model === key)));
+      $('#model-id').textContent = model.id;
+      $('#model-title').textContent = model.title;
+      $('#model-description').textContent = model.description;
+      $('#model-caveat').textContent = model.caveat;
+      $('#model-uses').replaceChildren(...model.uses.map(item => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        return li;
+      }));
+    }
+
+    $$('.model-button').forEach(button => button.addEventListener('click', () => selectModel(button.dataset.model)));
+    $$('.effort-button').forEach(button => button.addEventListener('click', () => {
+      $$('.effort-button').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+      $('#effort-note').textContent = effortNotes[button.dataset.effort];
+    }));
+    selectModel('opus');
+
+    function currentBrief() {
+      return $('#prompt-output').textContent;
+    }
+
+    let lastWorkflowSignature = '';
+    function updateWorkflow() {
+      const type = $('#task-type').value;
+      const risk = $('input[name="risk"]:checked').value;
+      const parallel = $('#parallelizable').checked;
+      const config = taskTypes[type];
+      const steps = [...config.steps];
+      const effort = risk === 'high' ? 'high' : 'medium';
+      let checkpoint = config.checkpoint;
+
+      if (risk === 'medium' && ['feature', 'migration'].includes(type)) {
+        steps.push('Use a fresh-context reviewer for requirement and correctness gaps.');
+      }
+      if (risk === 'high') {
+        steps.unshift('Pause for human approval of scope, interfaces, and risk controls before editing.');
+        steps.push('Run independent review and the full CI gate; require human merge approval.');
+        checkpoint = 'Approve the plan, privileged actions, independent review outcome, and final merge.';
+      }
+      if (parallel) {
+        const implementationIndexes = { small: 1, bug: 2, feature: 2, refactor: 2, migration: 2 };
+        const delegationIndex = implementationIndexes[type] + (risk === 'high' ? 1 : 0);
+        steps.splice(delegationIndex, 0, 'Assign independent units to separate worktrees before implementation begins.');
+        steps.splice(steps.length - 1, 0, 'Integrate the units, resolve shared-state conflicts, and rerun affected checks.');
+        checkpoint += ' Shared services, ports, databases, and generated state still need coordination.';
+      }
+
+      $('#workflow-title').textContent = config.title;
+      $('#workflow-effort').textContent = `${effort} effort`;
+      $('#workflow-agents').textContent = parallel ? 'Separate worktrees' : '1 session';
+      const workflowSignature = `${type}:${risk}:${parallel}`;
+      if (workflowSignature !== lastWorkflowSignature) {
+        $('#workflow-announcement').textContent = `${config.title} Opus 5.5, ${effort} effort, ${steps.length} steps.`;
+        lastWorkflowSignature = workflowSignature;
+      }
+      $('#workflow-checkpoint').textContent = checkpoint;
+      $('#workflow-steps').replaceChildren(...steps.map(step => {
+        const li = document.createElement('li');
+        li.textContent = step;
+        return li;
+      }));
+
+      const goal = $('#task-goal').value.trim() || '[Describe the observable outcome]';
+      const check = $('#check-command').value.trim() || './scripts/check-fast';
+      const workflowText = steps.map((step, index) => `${index + 1}. ${step}`).join('\n');
+      $('#prompt-output').textContent = [
+        `OUTCOME\n${goal}`,
+        `TASK / RISK\n${type} / ${risk}`,
+        'CONSTRAINTS\nStay within the requested scope. Record material assumptions. Do not weaken tests or change security settings to make checks pass.',
+        `VERIFICATION\nRun: ${check}\nMap each acceptance criterion to an observed check. Exercise the real application where applicable.`,
+        `WORKFLOW\n${workflowText}`,
+        'STOP AND ASK\nStop for material requirement ambiguity, repeated identical failures, expanding blast radius, new dependencies or privileges, destructive actions, or external writes.',
+        'RETURN\nChanged files, exact verification commands and outcomes, skipped checks, residual risks, and any decision still required.'
+      ].join('\n\n');
+    }
+
+    $('#workflow-form').addEventListener('input', updateWorkflow);
+    $('#workflow-form').addEventListener('change', updateWorkflow);
+    $('#workflow-form').addEventListener('submit', event => event.preventDefault());
+    updateWorkflow();
+
+    async function copyBrief() {
+      const text = currentBrief();
+      try {
+        if (!navigator.clipboard) throw new Error('Clipboard API unavailable');
+        await navigator.clipboard.writeText(text);
+      } catch (_) {
+        const previousFocus = document.activeElement;
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        let copied = false;
+        try {
+          textarea.select();
+          copied = document.execCommand('copy');
+        } catch (_) {
+          copied = false;
+        } finally {
+          textarea.remove();
+          if (previousFocus instanceof HTMLElement) previousFocus.focus({ preventScroll: true });
+        }
+        if (!copied) {
+          showToast('Copy failed. Open the task brief and copy it manually.');
+          $('.prompt-details').open = true;
+          return;
+        }
+      }
+      showToast('Task brief copied to clipboard.');
+    }
+    $('#copy-brief').addEventListener('click', copyBrief);
+    $('#copy-brief-secondary').addEventListener('click', copyBrief);
+
+    const themeToggle = $('#theme-toggle');
+    const colorScheme = matchMedia('(prefers-color-scheme: dark)');
+    function syncThemeControl() {
+      const dark = document.documentElement.dataset.theme === 'dark' ||
+        (!document.documentElement.dataset.theme && colorScheme.matches);
+      themeToggle.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+      $('#theme-icon').textContent = dark ? '☼' : '◐';
+    }
+    themeToggle.addEventListener('click', () => {
+      const dark = document.documentElement.dataset.theme === 'dark' ||
+        (!document.documentElement.dataset.theme && colorScheme.matches);
+      document.documentElement.dataset.theme = dark ? 'light' : 'dark';
+      try { localStorage.setItem('agentic-dev-theme', document.documentElement.dataset.theme); } catch (_) {}
+      syncThemeControl();
+    });
+    colorScheme.addEventListener('change', () => {
+      if (!document.documentElement.dataset.theme) syncThemeControl();
+    });
+    syncThemeControl();
+
+    const checklistKey = 'agentic-dev-rollout-v1';
+    const checkboxes = $$('#checklist input[type="checkbox"]');
+    function saveProgress() {
+      const completed = checkboxes.filter(box => box.checked).map(box => box.dataset.step);
+      let persisted = true;
+      try {
+        localStorage.setItem(checklistKey, JSON.stringify(completed));
+        $('#storage-description').textContent = 'Six steps toward a portable setup. Your progress is stored only in this browser.';
+      } catch (_) {
+        persisted = false;
+        $('#storage-description').textContent = 'Browser storage is unavailable. Progress will be kept only until this page closes.';
+      }
+      updateProgress();
+      return persisted;
+    }
+    function updateProgress() {
+      const count = checkboxes.filter(box => box.checked).length;
+      const percent = Math.round(count / checkboxes.length * 100);
+      $('#rollout-progress').value = count;
+      $('#rollout-progress').textContent = `${percent}%`;
+      $('#progress-text').textContent = `${count} of ${checkboxes.length} complete`;
+      $('#progress-percent').textContent = `${percent}%`;
+    }
+    try {
+      const completed = JSON.parse(localStorage.getItem(checklistKey) || '[]');
+      if (Array.isArray(completed)) checkboxes.forEach(box => { box.checked = completed.includes(box.dataset.step); });
+    } catch (_) {
+      $('#storage-description').textContent = 'Browser storage is unavailable. Progress will be kept only until this page closes.';
+    }
+    checkboxes.forEach(box => box.addEventListener('change', () => {
+      if (!saveProgress()) showToast('Progress changed for this page only; browser storage is unavailable.');
+    }));
+    $('#reset-progress').addEventListener('click', () => {
+      checkboxes.forEach(box => { box.checked = false; });
+      const persisted = saveProgress();
+      showToast(persisted ? 'Rollout progress reset.' : 'Reset for this page only; browser storage is unavailable.');
+    });
+    updateProgress();
+
+    if ('IntersectionObserver' in window) {
+      const links = $$('.nav a');
+      const visibleSections = new Map();
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => visibleSections.set(entry.target.id, entry.isIntersecting ? entry.intersectionRatio : 0));
+        const visible = [...visibleSections.entries()].sort((a, b) => b[1] - a[1])[0];
+        links.forEach(link => {
+          if (visible && visible[1] > 0 && link.getAttribute('href') === `#${visible[0]}`) link.setAttribute('aria-current', 'location');
+          else link.removeAttribute('aria-current');
+        });
+      }, { rootMargin: '-20% 0px -60%', threshold: [0, .25, .5] });
+      ['architecture', 'builder', 'models', 'guardrails', 'rollout'].forEach(id => observer.observe(document.getElementById(id)));
+    }
+  </script>
+</body>
+</html>
